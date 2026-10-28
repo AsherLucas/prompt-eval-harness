@@ -1,0 +1,28 @@
+name: CI
+on: [push, pull_request]
+jobs:
+  test-and-dogfood:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install ".[dev]"
+      - run: python -m pytest -q
+      - name: Dogfood — run the harness on its own golden cases
+        run: >-
+          python -m prompt_eval run
+          --cases examples/cases.yaml --provider stub
+          --markdown report.md --junit report.xml --json run.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prompt-eval-reports-${{ matrix.python-version }}
+          path: |
+            report.md
+            report.xml
+            run.json
