@@ -1,0 +1,22 @@
+# Failing example — demonstrates the CI gate.
+# Expected result: 1/3 passed, exit code 1.
+version: 1
+cases:
+  - id: fail-exact
+    prompt: "Say hello"
+    stub_output: "goodbye"
+    expected:
+      - type: exact
+        value: "hello"
+  - id: pass-exact
+    prompt: "Say hello"
+    stub_output: "hello"
+    expected:
+      - type: exact
+        value: "hello"
+  - id: fail-citation
+    prompt: "Make a cited claim"
+    stub_output: "No sources here."
+    expected:
+      - type: citation
+        min_citations: 1

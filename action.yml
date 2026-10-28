@@ -1,0 +1,61 @@
+name: "Prompt Eval Harness"
+description: "Run prompt-eval-harness cases as a CI gate (deterministic, offline-first by default)"
+inputs:
+  cases:
+    description: "Path to the YAML case file"
+    required: false
+    default: "examples/cases.yaml"
+  provider:
+    description: "Provider: stub (offline) or openai"
+    required: false
+    default: "stub"
+  model:
+    description: "Model name for the openai provider"
+    required: false
+    default: "gpt-4o-mini"
+  base-url:
+    description: "OpenAI-compatible base URL"
+    required: false
+    default: "https://api.openai.com/v1"
+  threshold:
+    description: "Minimum pass rate for the gate, 0.0-1.0"
+    required: false
+    default: "1.0"
+  markdown-report:
+    description: "Path for the Markdown report"
+    required: false
+    default: "prompt-eval-report.md"
+  junit-report:
+    description: "Path for the JUnit XML report"
+    required: false
+    default: "prompt-eval-report.xml"
+  working-directory:
+    description: "Directory containing the project (where pyproject.toml lives)"
+    required: false
+    default: "."
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+    - name: Install prompt-eval-harness
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: pip install .
+    - name: Run prompt evaluations
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: >-
+        python -m prompt_eval run
+        --cases "${{ inputs.cases }}"
+        --provider "${{ inputs.provider }}"
+        --model "${{ inputs.model }}"
+        --base-url "${{ inputs.base-url }}"
+        --threshold "${{ inputs.threshold }}"
+        --markdown "${{ inputs.markdown-report }}"
+        --junit "${{ inputs.junit-report }}"
+branding:
+  icon: "check-circle"
+  color: "green"
