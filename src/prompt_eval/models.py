@@ -71,10 +71,50 @@ class CaseResult:
     prompt: str
     output: str
     expectations: list[ExpectationResult] = field(default_factory=list)
+    # Advisory results (e.g. LLM-as-judge) are NEVER part of `passed`.
+    advisory: list[ExpectationResult] = field(default_factory=list)
+    # Provider usage for this case, e.g. {"prompt_tokens": 12,
+    # "completion_tokens": 4, "total_tokens": 16}. Empty when the
+    # provider does not report usage (stub, most local models).
+    usage: dict[str, Any] = field(default_factory=dict)
 
     @property
     def passed(self) -> bool:
         return all(e.passed for e in self.expectations)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "case_id": self.case_id,
+            "prompt": self.prompt,
+            "output": self.output,
+            "passed": self.passed,
+            "expectations": [
+                {"type": e.type, "passed": e.passed, "detail": e.detail}
+                for e in self.expectations
+            ],
+            "advisory": [
+                {"type": e.type, "passed": e.passed, "detail": e.detail}
+                for e in self.advisory
+            ],
+            "usage": self.usage,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "CaseResult":
+        return cls(
+            case_id=str(data["case_id"]),
+            prompt=str(data.get("prompt", "")),
+            output=str(data.get("output", "")),
+            expectations=[
+                ExpectationResult(type=e["type"], passed=bool(e["passed"]), detail=str(e.get("detail", "")))
+                for e in data.get("expectations") or []
+            ],
+            advisory=[
+                ExpectationResult(type=e["type"], passed=bool(e["passed"]), detail=str(e.get("detail", "")))
+                for e in data.get("advisory") or []
+            ],
+            usage=dict(data.get("usage") or {}),
+        )
 
 
 @dataclass
@@ -82,8 +122,32 @@ class RunReport:
     results: list[CaseResult] = field(default_factory=list)
     model: str = ""
     prompt_version: str = ""
-    harness_version: str = "0.1.0"
+    harness_version: str = "0.2.0"
     threshold: float = 1.0
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "version": 1,
+            "model": self.model,
+            "prompt_version": self.prompt_version,
+            "harness_version": self.harness_version,
+            "threshold": self.threshold,
+            "total": self.total,
+            "passed_count": self.passed_count,
+            "pass_rate": self.pass_rate,
+            "gate_passed": self.gate_passed,
+            "results": [r.to_dict() for r in self.results],
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "RunReport":
+        return cls(
+            results=[CaseResult.from_dict(r) for r in data.get("results") or []],
+            model=str(data.get("model", "")),
+            prompt_version=str(data.get("prompt_version", "")),
+            harness_version=str(data.get("harness_version", "")),
+            threshold=float(data.get("threshold", 1.0)),
+        )
 
     @property
     def total(self) -> int:

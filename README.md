@@ -5,14 +5,14 @@ harness: a Python library, a CLI, and a GitHub Action that fail CI the
 way a broken unit test does when a prompt, model, or retrieval change
 silently degrades output.
 
-> **Honest status (v0.1.0): this is an early-stage tool.** It was built
-> as a first version, it has no users yet, and it does **not yet
-> qualify for any six-month maintainer programme** (such as OpenAI
-> Codex for Open Source or Anthropic Claude for Open Source, which
-> reward already widely-used open-source projects). No stars,
-> downloads, users, contributors, or benchmark results are claimed
-> anywhere in this repository, because none exist yet. Adoption,
-> if it comes, has to be earned by other developers actually using it.
+> **Honest status (v0.2.0): this is an early-stage tool.** It has
+> no users yet, and it does **not yet qualify for any six-month
+> maintainer programme** (such as OpenAI Codex for Open Source or
+> Anthropic Claude for Open Source, which reward already
+> widely-used open-source projects). No stars, downloads, users,
+> contributors, or benchmark results are claimed anywhere in this
+> repository, because none exist yet. Adoption, if it comes, has
+> to be earned by other developers actually using it.
 
 ## 5-minute quickstart
 
@@ -77,25 +77,31 @@ All scorers are deterministic and offline. None of them calls a model.
 | ------ | -------------- | -------------- |
 | `exact` | Output equals a value | `value`, `case_sensitive` (default true), `strip` (default true) |
 | `regex` | Output matches a pattern | `pattern`, `ignore_case`, `multiline` |
-| `json_schema` | Output parses as JSON and matches a schema **subset** | `schema` |
+| `json_schema` | Output parses as JSON and matches a full JSON Schema (via `jsonschema`) | `schema` |
 | `length` | Character / word bounds | `min_length`, `max_length`, `min_words`, `max_words` |
 | `format` | Output is well-formed | `kind`: `json`, `email`, `url`, `lowercase`, `uppercase` |
 | `contains_all` | Output contains every listed string | `strings`, `case_sensitive` (default true) |
 | `citation` | RAG-style output cites sources | `min_citations` (default 1), `pattern`, `required_sources` |
 
-**JSON Schema subset (read this before relying on it):** only
-`type`, `enum`, `required`, `properties`, `additionalProperties`
-(`false` only), `items`, `minItems`, `maxItems`, `minimum`,
-`maximum`, `minLength`, `maxLength`, and `pattern` are checked.
-Other keywords in a schema are ignored. This is **not** a full JSON
-Schema validator, and the code does not claim otherwise.
+**JSON Schema (v0.2.0):** full validation via the `jsonschema`
+package (Draft 2020-12), including `allOf`/`anyOf`/`oneOf`/`not`,
+nested schemas, and format-independent keywords. An invalid schema
+fails that expectation with a clear message instead of passing.
+
+**Custom scorers:** register one in code with
+`register_scorer(name, fn)`, or ship it via the
+`prompt_eval.scorers` entry-point group. See
+`examples/plugin_example.py` for a worked example.
 
 **Citation default:** a citation is `[1]`, `[2]`, … or
 `[source: name]`. Pass `pattern` to use a different marker style.
 
-**LLM-as-judge:** deliberately not included in v1. If it is added
-later, it will be advisory-only and must never be the default CI
-gate — a non-deterministic judge cannot be a reproducible gate.
+**LLM-as-judge (advisory only, v0.2.0):** add `--judge` to a run
+to also ask a model to judge each output. Judge results are
+reported in their own Markdown section, are never counted toward
+pass rate or exit code, and a judge failure never fails the gate.
+A non-deterministic judge cannot be a reproducible gate, so it
+must stay advisory.
 
 ## Providers
 
@@ -117,7 +123,34 @@ python -m prompt_eval run --cases my-cases.yaml --provider openai \
 
 Keys are read from the environment at run time and are never logged.
 If the key variable is unset, the run fails with a clear error
-instead of silently passing or failing cases.
+instead of silently passing or failing cases. Transient provider
+errors (HTTP 429/5xx, network errors) are retried with backoff
+(`--retries`, default 2); other HTTP errors fail immediately.
+
+- `ollama` — a local OpenAI-compatible server, default
+  `http://localhost:11434/v1`, no API key required:
+  `python -m prompt_eval run --cases my-cases.yaml --provider ollama --model llama3.1`
+
+## Diff, record/replay, and Promptfoo import
+
+```bash
+# Compare two machine-readable runs (exit 1 if any case flipped pass -> fail):
+python -m prompt_eval run --cases examples/cases.yaml --provider stub --json run-baseline.json
+python -m prompt_eval run --cases examples/cases.yaml --provider stub --json run-new.json
+python -m prompt_eval diff --baseline run-baseline.json --new run-new.json
+
+# Record real outputs once, re-score them offline in CI (no model call):
+python -m prompt_eval record --cases examples/cases.yaml --provider openai --recording rec.json
+python -m prompt_eval replay --cases examples/cases.yaml --recording rec.json
+
+# Import a basic Promptfoo file (deterministic assertions only; model
+# assertions raise an error instead of being silently dropped):
+python -m prompt_eval import-promptfoo --input promptfoo.yaml --output cases.yaml
+```
+
+Token usage reported by the provider (prompt/completion/total
+tokens) is shown in the Markdown report; cost is never estimated
+from invented prices.
 
 ## Reports and the CI gate
 
@@ -137,8 +170,11 @@ instead of silently passing or failing cases.
 
 ## CI guide
 
-Copy `.github/workflows/prompt-eval.yml` from the template below, or
-use the bundled `action.yml` (see below). The essential shape is:
+This repo dogfoods itself: `.github/workflows/ci.yml` runs the
+pytest suite and the harness on its own golden cases on every push
+and pull request (Python 3.11 and 3.12). For your own repo, copy
+the template below, or use the bundled `action.yml` (see below).
+The essential shape is:
 
 ```yaml
 name: prompt-eval
@@ -164,17 +200,25 @@ The bundled `action.yml` is a composite action wrapping the same
 steps, so a consumer repo can call it with `cases`, `provider`,
 `threshold`, and report-path inputs (see `action.yml`).
 
-## What v1 deliberately leaves out
+## Publishing (prepared, not yet published)
+
+`.github/workflows/publish.yml` publishes to PyPI on version tags
+via Trusted Publishing (OIDC, no token stored in the repo), and
+`action.yml` already has Marketplace branding. The remaining steps
+are account-owner steps only and are **not** done by this code:
+create a PyPI account and enable 2FA, register a pending Trusted
+Publisher for this repo/workflow on PyPI, and accept the GitHub
+Marketplace Developer Agreement before publishing the Action.
+
+## What v0.2.0 deliberately leaves out
 
 - Hosted dashboard, SaaS, accounts, or any server component.
-- LLM-as-judge as a gating scorer (advisory-only if added later).
 - Adapters for every LLM framework (LangChain, LangGraph,
   LlamaIndex, …), every language, or a visual prompt editor.
 - Training, fine-tuning, dataset generation, or a prompt
   marketplace.
-- A TypeScript port (a separate package later, not a v1 stretch
-  goal).
-- Full JSON Schema validation (subset only, documented above).
+- A TypeScript port (a separate package later).
 
-See [CHANGELOG.md](CHANGELOG.md) for the v0.1.0 scope and
+See [CHANGELOG.md](CHANGELOG.md) for the v0.2.0 scope,
+[docs/user-guide.md](docs/user-guide.md) for the full guide, and
 [CONTRIBUTING.md](CONTRIBUTING.md) for how to add a scorer.

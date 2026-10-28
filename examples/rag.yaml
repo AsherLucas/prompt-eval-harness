@@ -1,0 +1,81 @@
+# RAG example cases — all pass offline with --provider stub.
+# Every case uses the citation scorer: RAG answers should ground
+# claims in retrieved sources instead of answering bare. Each case's
+# stub_output is the canned output the stub provider returns.
+# In real use, remove stub_output and use --provider openai so
+# outputs come from a real model, not from this file.
+version: 1
+cases:
+  - id: rag-single-citation
+    prompt: "Explain photosynthesis with a citation"
+    stub_output: "Photosynthesis converts sunlight into chemical energy [1]."
+    expected:
+      - type: citation
+        min_citations: 1
+  - id: rag-two-citations
+    prompt: "Compare solar and wind power, citing two sources"
+    stub_output: "Solar panels generate electricity [1] and wind turbines generate electricity [2]."
+    expected:
+      - type: citation
+        min_citations: 2
+  - id: rag-source-name
+    prompt: "Cite the user guide when explaining setup"
+    stub_output: "See the user guide [source: user-guide] for install steps."
+    expected:
+      - type: citation
+        min_citations: 1
+        required_sources: [user-guide]
+  - id: rag-two-sources
+    prompt: "Answer using the docs and the FAQ, citing both"
+    stub_output: "Claim A [source: docs] and claim B [source: faq]."
+    expected:
+      - type: citation
+        min_citations: 2
+        required_sources: [docs, faq]
+  - id: rag-answer-contains
+    prompt: "What is the capital of France, with a citation?"
+    stub_output: "The capital of France is Paris [1]."
+    expected:
+      - type: citation
+        min_citations: 1
+      - type: contains_all
+        strings: [Paris]
+  - id: rag-answer-length
+    prompt: "Define retrieval-augmented generation briefly, with a citation"
+    stub_output: "Retrieval-augmented generation grounds answers in retrieved documents [1]."
+    expected:
+      - type: citation
+        min_citations: 1
+      - type: length
+        min_words: 5
+        max_words: 20
+  - id: rag-custom-pattern
+    prompt: "Answer with a Source: marker instead of a numbered citation"
+    stub_output: "The answer is Paris. Source: wikipedia"
+    expected:
+      - type: citation
+        pattern: 'Source:\s*\w+'
+        min_citations: 1
+  - id: rag-three-citations
+    prompt: "Make three cited claims about the water cycle"
+    stub_output: "Water evaporates [1], condenses into clouds [2], and falls as rain [3]."
+    expected:
+      - type: citation
+        min_citations: 3
+  - id: rag-source-plus-facts
+    prompt: "Explain batteries using the energy manual, with a citation"
+    stub_output: "Batteries store energy [source: energy-manual] and release it on demand."
+    expected:
+      - type: citation
+        min_citations: 1
+        required_sources: [energy-manual]
+      - type: contains_all
+        strings: [Batteries, energy]
+  - id: rag-cited-fact
+    prompt: "At what temperature does water boil at sea level, with a citation?"
+    stub_output: "The guide [1] states that water boils at 100 degrees Celsius at sea level."
+    expected:
+      - type: citation
+        min_citations: 1
+      - type: contains_all
+        strings: [boils, Celsius]

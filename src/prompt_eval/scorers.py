@@ -2,7 +2,13 @@
 
 Every scorer here is pure and needs no model call, no network, and no
 paid API. That is deliberate: the default CI gate must be reproducible
-and free. LLM-as-judge is deliberately NOT a scorer in v1.
+and free. LLM-as-judge is advisory-only and lives in judge.py, never
+in this gate.
+
+Custom scorers can be registered in code with register_scorer(), or
+discovered via the ``prompt_eval.scorers`` entry-point group with
+load_plugin_scorers(). A plugin scorer is a function
+``fn(output, params) -> ExpectationResult``.
 """
 
 from __future__ import annotations
@@ -55,87 +61,27 @@ def _score_regex(output: str, p: dict[str, Any]) -> ExpectationResult:
     )
 
 
-def _check_json_schema(value: Any, schema: dict[str, Any], path: str = "$") -> list[str]:
-    """Validate against a documented SUBSET of JSON Schema.
-
-    Supported keywords only: type, enum, required, properties,
-    additionalProperties (false only), items, minItems, maxItems,
-    minimum, maximum, minLength, maxLength, pattern.
-    Anything else in a schema is ignored, and the README says so
-    plainly -- this is not a full JSON Schema validator.
-    """
-    errors: list[str] = []
-    type_map = {
-        "object": dict,
-        "array": list,
-        "string": str,
-        "integer": int,
-        "number": (int, float),
-        "boolean": bool,
-        "null": type(None),
-    }
-    if "type" in schema:
-        want = schema["type"]
-        py = type_map.get(want)
-        if py is not None:
-            # bool is a subclass of int in Python; keep them distinct.
-            if want == "integer" and isinstance(value, bool):
-                errors.append(f"{path}: expected integer, got boolean")
-            elif want == "number" and isinstance(value, bool):
-                errors.append(f"{path}: expected number, got boolean")
-            elif not isinstance(value, py):
-                errors.append(f"{path}: expected {want}, got {type(value).__name__}")
-    if "enum" in schema and value not in schema["enum"]:
-        errors.append(f"{path}: {value!r} not in enum {schema['enum']!r}")
-    if isinstance(value, dict):
-        for req in schema.get("required", []):
-            if req not in value:
-                errors.append(f"{path}: missing required property {req!r}")
-        props = schema.get("properties", {})
-        for key, sub in props.items():
-            if key in value:
-                errors.extend(_check_json_schema(value[key], sub, f"{path}.{key}"))
-        if schema.get("additionalProperties") is False:
-            for key in value:
-                if key not in props:
-                    errors.append(f"{path}: additional property {key!r} not allowed")
-    if isinstance(value, list):
-        if "minItems" in schema and len(value) < schema["minItems"]:
-            errors.append(f"{path}: {len(value)} items < minItems {schema['minItems']}")
-        if "maxItems" in schema and len(value) > schema["maxItems"]:
-            errors.append(f"{path}: {len(value)} items > maxItems {schema['maxItems']}")
-        if "items" in schema:
-            for i, item in enumerate(value):
-                errors.extend(_check_json_schema(item, schema["items"], f"{path}[{i}]"))
-    if isinstance(value, (int, float)) and not isinstance(value, bool):
-        if "minimum" in schema and value < schema["minimum"]:
-            errors.append(f"{path}: {value} < minimum {schema['minimum']}")
-        if "maximum" in schema and value > schema["maximum"]:
-            errors.append(f"{path}: {value} > maximum {schema['maximum']}")
-    if isinstance(value, str):
-        if "minLength" in schema and len(value) < schema["minLength"]:
-            errors.append(f"{path}: length {len(value)} < minLength {schema['minLength']}")
-        if "maxLength" in schema and len(value) > schema["maxLength"]:
-            errors.append(f"{path}: length {len(value)} > maxLength {schema['maxLength']}")
-        if "pattern" in schema:
-            try:
-                if not re.search(schema["pattern"], value):
-                    errors.append(f"{path}: does not match pattern {schema['pattern']!r}")
-            except re.error as exc:
-                errors.append(f"{path}: invalid pattern: {exc}")
-    return errors
-
-
 def _score_json_schema(output: str, p: dict[str, Any]) -> ExpectationResult:
+    """Full JSON Schema validation via the ``jsonschema`` package."""
+    from jsonschema import Draft202012Validator, SchemaError, ValidationError
+
     schema = p.get("schema", {})
     try:
         value = json.loads(output)
     except json.JSONDecodeError as exc:
         return _fail("json_schema", f"output is not valid JSON: {exc}")
-    errors = _check_json_schema(value, schema)
-    return _ok("json_schema", "JSON matches schema subset") if not errors else _fail(
-        "json_schema", "; ".join(errors)
-    )
+    try:
+        validator = Draft202012Validator(schema)
+        validator.check_schema(schema)
+    except SchemaError as exc:
+        return _fail("json_schema", f"invalid schema: {exc.message}")
+    errors = sorted(validator.iter_errors(value), key=lambda e: list(e.path))
+    if not errors:
+        return _ok("json_schema", "JSON matches schema")
+    return _fail("json_schema", "; ".join(
+        f"{'$' + ''.join('.' + str(x) for x in e.path) if e.path else '$'}: {e.message}"
+        for e in errors
+    ))
 
 
 def _score_length(output: str, p: dict[str, Any]) -> ExpectationResult:
@@ -219,6 +165,27 @@ _SCORERS = {
     "contains_all": _score_contains_all,
     "citation": _score_citation,
 }
+
+
+def register_scorer(name: str, fn) -> None:
+    """Register a custom scorer: fn(output, params) -> ExpectationResult."""
+    _SCORERS[name] = fn
+
+
+def load_plugin_scorers(group: str = "prompt_eval.scorers") -> list[str]:
+    """Discover scorers from an entry-point group; returns loaded names."""
+    from importlib.metadata import entry_points
+
+    loaded: list[str] = []
+    try:
+        eps = entry_points(group=group)
+    except TypeError:  # Python < 3.10 style API
+        eps = entry_points().get(group, [])
+    for ep in eps:
+        fn = ep.load()
+        register_scorer(ep.name, fn)
+        loaded.append(ep.name)
+    return loaded
 
 
 def score_expectation(output: str, expectation: Expectation) -> ExpectationResult:

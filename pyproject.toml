@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "prompt-eval-harness"
-version = "0.1.0"
+version = "0.2.0"
 description = "Deterministic, offline-first prompt and agent evaluation regression harness (library + CLI + GitHub Action)"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
 authors = [{ name = "prompt-eval-harness contributors" }]
-dependencies = ["PyYAML>=6.0"]
+dependencies = ["PyYAML>=6.0", "jsonschema>=4.0"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]

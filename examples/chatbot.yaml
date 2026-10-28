@@ -1,0 +1,80 @@
+# Chatbot example cases — all pass offline with --provider stub.
+# These cases cover format, length, and contains_all: the checks
+# that matter most for short assistant replies (well-formed output,
+# bounded reply size, and required content). Each case's stub_output
+# is the canned output the stub provider returns. In real use,
+# remove stub_output and use --provider openai so outputs come
+# from a real model, not from this file.
+version: 1
+cases:
+  - id: chatbot-lowercase-greeting
+    prompt: "Greet the user in lowercase words only"
+    stub_output: "hello there friend"
+    expected:
+      - type: format
+        kind: lowercase
+      - type: length
+        min_words: 2
+        max_words: 10
+  - id: chatbot-support-email
+    prompt: "Return only the support email address"
+    stub_output: "support@example.com"
+    expected:
+      - type: format
+        kind: email
+  - id: chatbot-help-url
+    prompt: "Return only the help-centre URL"
+    stub_output: "https://example.com/help"
+    expected:
+      - type: format
+        kind: url
+  - id: chatbot-json-reply
+    prompt: "Return a reply as JSON"
+    stub_output: '{"reply": "Hello!"}'
+    expected:
+      - type: format
+        kind: json
+  - id: chatbot-uppercase-notice
+    prompt: "Return an uppercase notice"
+    stub_output: "THANK YOU FOR YOUR MESSAGE"
+    expected:
+      - type: format
+        kind: uppercase
+  - id: chatbot-short-acknowledgement
+    prompt: "Acknowledge the user briefly"
+    stub_output: "Got it, thanks!"
+    expected:
+      - type: length
+        min_length: 5
+        max_length: 50
+  - id: chatbot-summary-length
+    prompt: "Summarise the request in plain language"
+    stub_output: "Here is a helpful summary of your request in plain language."
+    expected:
+      - type: length
+        min_words: 8
+        max_words: 20
+  - id: chatbot-contains-greeting
+    prompt: "Greet the user and offer help"
+    stub_output: "Hello! I can help you with that today."
+    expected:
+      - type: contains_all
+        strings: [Hello, help]
+  - id: chatbot-contains-case-insensitive
+    prompt: "Welcome the user in uppercase"
+    stub_output: "HELLO AND WELCOME"
+    expected:
+      - type: format
+        kind: uppercase
+      - type: contains_all
+        strings: [hello]
+        case_sensitive: false
+  - id: chatbot-thanks-length
+    prompt: "Thank the user in a short reply"
+    stub_output: "Thanks a lot!"
+    expected:
+      - type: length
+        min_length: 10
+        max_length: 20
+      - type: contains_all
+        strings: [Thanks]

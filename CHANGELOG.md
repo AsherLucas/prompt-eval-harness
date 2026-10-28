@@ -4,6 +4,45 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog, and the project adheres to
 Semantic Versioning.
 
+## [0.2.0] — 2026-10-29
+
+### Added
+
+- Run-diff / baseline comparison: `--json` run files plus
+  `prompt-eval diff` (pass -> fail regressions, fail -> pass fixes,
+  new/removed cases; exit 1 on any regression).
+- Record + replay: `prompt-eval record` saves real outputs, and
+  `prompt-eval replay` re-scores them offline with no model call.
+- Plugin scorers: `register_scorer()` and the
+  `prompt_eval.scorers` entry-point group, with a worked example
+  in `examples/plugin_example.py` and `--plugin-module` on the CLI.
+- Promptfoo YAML import (`prompt-eval import-promptfoo`) for
+  deterministic assertions only; unsupported assertions fail loudly.
+- Advisory LLM-as-judge scorer (`--judge`): reported separately,
+  never counted toward pass rate or exit code; judge failures never
+  fail the gate.
+- Full JSON Schema validation via the `jsonschema` package
+  (replaces the v0.1.0 documented subset).
+- Providers: `ollama` local-model provider (OpenAI-compatible,
+  no key required), retries with backoff for transient provider
+  errors, and token-usage reporting in Markdown reports.
+- CI dogfood: `.github/workflows/ci.yml` runs tests and the golden
+  cases on every push/PR (Python 3.11, 3.12).
+- Publishing preparation: `.github/workflows/publish.yml` (PyPI
+  Trusted Publishing on version tags) and Marketplace-ready
+  `action.yml` branding. PyPI account/2FA, Trusted Publisher
+  registration, and Marketplace agreement remain account-owner steps.
+- Examples: RAG (10 cases), chatbot (10), and code generation (10)
+  case files, all passing offline via the stub provider.
+- Docs: full user guide, scorer catalogue, and provider guide
+  under `docs/`.
+
+### Changed
+
+- Version bumped to 0.2.0; `RunReport` is now serialisable to/from
+  JSON, and case results carry advisory results and provider usage
+  separately from gate results.
+
 ## [0.1.0] — 2026-10-29
 
 First version. Early-stage tool; no adoption is claimed.
