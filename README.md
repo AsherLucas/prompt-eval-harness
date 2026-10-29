@@ -103,6 +103,10 @@ All scorers are deterministic and offline. None of them calls a model.
 | `format` | Output is well-formed | `kind`: `json`, `email`, `url`, `lowercase`, `uppercase` |
 | `contains_all` | Output contains every listed string | `strings`, `case_sensitive` (default true) |
 | `citation` | RAG-style output cites sources | `min_citations` (default 1), `pattern`, `required_sources` |
+| `forbidden` | Output contains no listed string (leakage / injection guard) | `strings` |
+| `numeric_close` | First number in output is within tolerance of a value | `value`, `tolerance` |
+| `tool_call` | Output is JSON naming the expected tool with required args (tool-call contract) | `name`, `required_args` |
+| `retrieval` | Expected doc ids appear in output; recall vs `min_recall` (failure budget) | `expected_docs`, `min_recall` (default 1.0) |
 
 **JSON Schema (v0.2.0):** full validation via the `jsonschema`
 package (Draft 2020-12), including `allOf`/`anyOf`/`oneOf`/`not`,
