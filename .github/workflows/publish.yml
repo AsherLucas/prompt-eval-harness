@@ -3,8 +3,9 @@
 # ACCOUNT-OWNER STEPS REQUIRED BEFORE THIS CAN RUN (not done by code):
 # 1. Create a PyPI account and enable 2FA on it.
 # 2. On PyPI, register a pending Trusted Publisher for this repo and
-#    this workflow (owner/repo, workflow name "publish.yml",
-#    environment optional). No long-lived token is stored in the repo.
+#    this workflow: owner AsherLucas, repo prompt-eval-harness,
+#    workflow name "Publish to PyPI" (the `name:` field below, not the
+#    filename), no environment. No long-lived token is stored in the repo.
 # 3. Tag a release (git tag v0.2.0 && git push --tags); the tag
 #    triggers this workflow. The version in pyproject.toml must match.
 name: Publish to PyPI

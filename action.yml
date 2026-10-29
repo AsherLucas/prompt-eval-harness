@@ -41,9 +41,12 @@ runs:
       with:
         python-version: "3.12"
     - name: Install prompt-eval-harness
+      # Install from the action's own checkout, not from the consumer repo:
+      # `pip install .` would try to install the consumer's project, which
+      # fails for external Marketplace users. github.action_path points at
+      # this action's repository checkout.
       shell: bash
-      working-directory: ${{ inputs.working-directory }}
-      run: pip install .
+      run: pip install "${{ github.action_path }}"
     - name: Run prompt evaluations
       shell: bash
       working-directory: ${{ inputs.working-directory }}
