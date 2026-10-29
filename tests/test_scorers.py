@@ -78,3 +78,22 @@ def test_citation():
 
 def test_unknown_scorer_fails_not_crashes():
     assert not check("nope", "anything").passed
+
+def test_forbidden_scorer():
+    from prompt_eval.models import Expectation
+    from prompt_eval.scorers import score_expectation
+    ok = score_expectation("hello world", Expectation(type="forbidden", params={"strings": ["secret", "password"]}))
+    assert ok.passed
+    bad = score_expectation("my password is x", Expectation(type="forbidden", params={"strings": ["password"]}))
+    assert not bad.passed
+
+
+def test_numeric_close_scorer():
+    from prompt_eval.models import Expectation
+    from prompt_eval.scorers import score_expectation
+    ok = score_expectation("The total is 42.1 dollars", Expectation(type="numeric_close", params={"value": 42.0, "tolerance": 0.5}))
+    assert ok.passed
+    bad = score_expectation("The total is 50 dollars", Expectation(type="numeric_close", params={"value": 42.0, "tolerance": 0.5}))
+    assert not bad.passed
+    none = score_expectation("no numbers here", Expectation(type="numeric_close", params={"value": 1}))
+    assert not none.passed

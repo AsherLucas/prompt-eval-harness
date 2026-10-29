@@ -224,3 +224,13 @@ Two-marker example: `Claim A [1] and claim B [2].` passes
 `min_citations: 2`. A custom pattern example: with
 `pattern: 'Source:\s*\w+'`, output `The answer is Paris.
 Source: wikipedia` passes `min_citations: 1`.
+
+## forbidden
+Fail if any listed string appears in the output. Useful as a leakage / prompt-injection guard, e.g. forbidding secret markers or disallowed phrases.
+- `strings`: list of forbidden strings
+- `case_sensitive`: default true
+
+## numeric_close
+Extract the first number in the output and compare it to an expected value within a tolerance. Useful for calculations, prices, and totals where exact text varies.
+- `value`: expected number (required)
+- `tolerance`: allowed absolute difference, default 0.0

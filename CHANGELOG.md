@@ -30,6 +30,13 @@ Semantic Versioning.
   (`Case`/`CaseResult`/`RunReport`, run/recording I/O, reports,
   Promptfoo import, scorer dispatch, CLI entry points, judge).
 
+## [0.3.0] — 2026-10-29
+
+### Added
+
+- New deterministic scorers: `forbidden` (fail if any listed string appears, for leakage/injection guards) and `numeric_close` (first number in output within a tolerance of an expected value).
+- Tests and scorer catalogue docs for both new scorers.
+
 ## [0.2.0] — 2026-10-29
 
 ### Added

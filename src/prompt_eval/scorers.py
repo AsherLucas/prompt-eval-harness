@@ -139,6 +139,34 @@ def _score_contains_all(output: str, p: dict[str, Any]) -> ExpectationResult:
     )
 
 
+def _score_forbidden(output: str, p: dict[str, Any]) -> ExpectationResult:
+    """Fail if any forbidden string appears (leakage / injection guard)."""
+    strings = [str(s) for s in (p.get("strings") or [])]
+    case_sensitive = bool(p.get("case_sensitive", True))
+    hay = output if case_sensitive else output.lower()
+    found = [s for s in strings if (s if case_sensitive else s.lower()) in hay]
+    return _ok("forbidden", f"no forbidden strings in {len(strings)} checked") if not found else _fail(
+        "forbidden", f"forbidden strings present: {found!r}"
+    )
+
+
+def _score_numeric_close(output: str, p: dict[str, Any]) -> ExpectationResult:
+    """Compare the first number in the output to an expected value."""
+    try:
+        expected = float(p.get("value"))
+    except (TypeError, ValueError):
+        return _fail("numeric_close", f"invalid expected value {p.get('value')!r}")
+    tolerance = float(p.get("tolerance", 0.0))
+    match = re.search(r"-?\d+(?:\.\d+)?", output)
+    if not match:
+        return _fail("numeric_close", "no number found in output")
+    actual = float(match.group(0))
+    diff = abs(actual - expected)
+    return _ok("numeric_close", f"{actual} within {tolerance} of {expected}") if diff <= tolerance else _fail(
+        "numeric_close", f"{actual} differs from {expected} by {diff} > tolerance {tolerance}"
+    )
+
+
 def _score_citation(output: str, p: dict[str, Any]) -> ExpectationResult:
     pattern = str(p.get("pattern", "")) or None
     regex = re.compile(pattern) if pattern else _CITATION_RE
@@ -164,6 +192,8 @@ _SCORERS = {
     "format": _score_format,
     "contains_all": _score_contains_all,
     "citation": _score_citation,
+    "forbidden": _score_forbidden,
+    "numeric_close": _score_numeric_close,
 }
 
 
