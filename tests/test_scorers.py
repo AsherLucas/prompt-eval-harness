@@ -97,3 +97,23 @@ def test_numeric_close_scorer():
     assert not bad.passed
     none = score_expectation("no numbers here", Expectation(type="numeric_close", params={"value": 1}))
     assert not none.passed
+
+
+def test_tool_call_contract():
+    from prompt_eval.scorers import score_expectation
+    from prompt_eval.models import Expectation
+    ok = score_expectation('{"tool": "get_weather", "arguments": {"city": "Cupertino"}}', Expectation(type="tool_call", params={"name": "get_weather", "required_args": ["city"]}))
+    assert ok.passed
+    bad = score_expectation('{"tool": "get_weather", "arguments": {}}', Expectation(type="tool_call", params={"name": "get_weather", "required_args": ["city"]}))
+    assert not bad.passed
+
+
+def test_retrieval_recall():
+    from prompt_eval.scorers import score_expectation
+    from prompt_eval.models import Expectation
+    ok = score_expectation("Based on doc-1 and doc-2.", Expectation(type="retrieval", params={"expected_docs": ["doc-1", "doc-2"]}))
+    assert ok.passed
+    partial = score_expectation("Based on doc-1.", Expectation(type="retrieval", params={"expected_docs": ["doc-1", "doc-2"], "min_recall": 0.5}))
+    assert partial.passed
+    fail = score_expectation("Based on doc-1.", Expectation(type="retrieval", params={"expected_docs": ["doc-1", "doc-2"]}))
+    assert not fail.passed

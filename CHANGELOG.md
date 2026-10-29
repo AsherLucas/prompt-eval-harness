@@ -98,3 +98,8 @@ First version. Early-stage tool; no adoption is claimed.
   CONTRIBUTING, MIT LICENSE, this changelog, `pyproject.toml`.
 - pytest suite covering scorers, providers, runner, reports, and CLI
   (including exit codes).
+
+## [0.4.0] — 2026-10-29
+
+### Added
+- New deterministic scorers `tool_call` (tool name + required arguments contract) and `retrieval` (expected-doc recall, with `min_recall` as a failure budget), from community feedback on tool-call contracts and RAG retrieval-vs-generation scoring.

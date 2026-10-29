@@ -183,6 +183,54 @@ def _score_citation(output: str, p: dict[str, Any]) -> ExpectationResult:
         "citation", "; ".join(problems)
     )
 
+def _score_tool_call(output: str, p: dict[str, Any]) -> ExpectationResult:
+    """Tool-call contract: output must be JSON naming the expected tool with required args.
+
+    Accepts {"tool": name, "arguments": {...}} or {"name": name, "args": {...}}.
+    This is the contract test the community asks for: a model/tool change that
+    renames a tool or drops a required argument fails CI, even if the prose looks fine.
+    """
+    try:
+        value = json.loads(output.strip())
+    except json.JSONDecodeError as exc:
+        return _fail("tool_call", f"output is not valid JSON: {exc}")
+    if not isinstance(value, dict):
+        return _fail("tool_call", "tool call output must be a JSON object")
+    name = value.get("tool", value.get("name"))
+    args = value.get("arguments", value.get("args", {}))
+    expected_name = p.get("name")
+    if expected_name and name != expected_name:
+        return _fail("tool_call", f"expected tool {expected_name!r}, got {name!r}")
+    if not isinstance(args, dict):
+        return _fail("tool_call", "tool call arguments must be a JSON object")
+    required = [str(s) for s in (p.get("required_args") or [])]
+    missing = [s for s in required if s not in args]
+    if missing:
+        return _fail("tool_call", f"missing required args: {missing!r}")
+    return _ok("tool_call", f"tool {name!r} with args {sorted(args)}")
+
+
+def _score_retrieval(output: str, p: dict[str, Any]) -> ExpectationResult:
+    """Retrieval recall: how many expected doc ids appear in the output.
+
+    This scores retrieval separately from generation: a RAG answer can read well
+    while citing the wrong docs, and this scorer catches that. min_recall
+    defaults to 1.0 (all expected docs); set lower for a failure budget.
+    """
+    expected = [str(s) for s in (p.get("expected_docs") or [])]
+    if not expected:
+        return _fail("retrieval", "no expected_docs given")
+    hits = [s for s in expected if s in output]
+    recall = len(hits) / len(expected)
+    try:
+        min_recall = float(p.get("min_recall", 1.0))
+    except (TypeError, ValueError):
+        return _fail("retrieval", f"invalid min_recall {p.get('min_recall')!r}")
+    detail = f"retrieval recall {len(hits)}/{len(expected)} = {recall:.2f}"
+    return _ok("retrieval", detail) if recall >= min_recall else _fail(
+        "retrieval", f"{detail} < min_recall {min_recall}"
+    )
+
 
 _SCORERS = {
     "exact": _score_exact,
@@ -194,6 +242,8 @@ _SCORERS = {
     "citation": _score_citation,
     "forbidden": _score_forbidden,
     "numeric_close": _score_numeric_close,
+    "tool_call": _score_tool_call,
+    "retrieval": _score_retrieval,
 }
 
 
