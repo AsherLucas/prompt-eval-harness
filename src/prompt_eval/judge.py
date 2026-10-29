@@ -22,6 +22,7 @@ class AdvisoryJudge:
         self.model = model or getattr(provider, "name", "")
 
     def judge(self, case_id: str, prompt: str, output: str) -> ExpectationResult:
+        """Judge one output; failures return an advisory result, never a gate failure."""
         judge_prompt = (
             "You are a strict evaluator. Judge whether the OUTPUT satisfies the TASK.\n"
             "Reply with JSON only, exactly: {\"verdict\": \"pass\" or \"fail\", "

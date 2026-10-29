@@ -101,9 +101,12 @@ output, the other cases still run, and the gate fails (exit code
   shape` (the endpoint did not return
   `choices[0].message.content` as expected).
 
-There is no retry, no timeout flag on the CLI (the client uses a
-60-second request timeout internally), and no per-case model
-override: one run uses one base URL and one model for all cases.
+Retries are on by default: transient failures (HTTP 429/5xx,
+network errors) are retried with backoff, controlled by
+`--retries` (default 2 on the CLI; the client uses a 60-second
+request timeout internally, with 120 seconds for the `ollama`
+provider). There is no per-case model override: one run uses one
+base URL and one model for all cases.
 
 ## Local OpenAI-compatible endpoints (e.g. Ollama-style)
 
@@ -135,12 +138,25 @@ Notes and limits, stated plainly:
   name your local server actually serves, or the server will
   reject the request and the case will fail as a provider error.
 
-## Choosing between the two
+## `ollama` — a local model, no key required
+
+`--provider ollama` is the same OpenAI-compatible client pointed
+at a local server (default `http://localhost:11434/v1`, default
+model `llama3.1`), except it does **not** require an API key:
+unlike the `openai` provider, it will not fail with a missing-key
+message on a keyless local server. Change the endpoint with
+`--base-url` and the model with `--model`, exactly as for
+`openai`. The "local endpoint needs a key variable set" note in
+the section above applies to `--provider openai` pointed at a
+local URL, not to `--provider ollama`.
+
+## Choosing between the three
 
 | Situation | Provider |
 | --------- | -------- |
 | Demo, test, CI smoke run, case-file authoring | `stub` |
 | Evaluating a real model or a real endpoint | `openai` (hosted or local base URL) |
+| Evaluating a local model with no key | `ollama` |
 | No key available, or no network | `stub` — the only option that works |
 
 A healthy workflow uses both: author and smoke-test cases with

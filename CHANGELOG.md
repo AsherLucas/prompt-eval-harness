@@ -4,6 +4,32 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog, and the project adheres to
 Semantic Versioning.
 
+## [Unreleased]
+
+### Added
+
+- Worked prompt-regression example (`examples/prompt-regression/`):
+  6 help-desk cases, a checked-in baseline run, one simulated
+  regression, and a `diff` walkthrough with verified output.
+  Covered by `tests/test_prompt_regression_example.py`.
+- Badges for CI status, MIT licence, and Python >= 3.11 in the
+  README (no stars/downloads claimed — there are none yet).
+
+### Fixed
+
+- README quickstart code fence: the demo commands were outside
+  the fenced block; the quickstart now uses `.venv/bin/python`
+  consistently and includes a run-diff step, all verified in a
+  clean venv.
+- Docs drift: the scorer catalogue still described the v0.1.0
+  JSON Schema subset (v0.2.0 is full Draft 2020-12 validation);
+  the provider guide wrongly said there is no retry and omitted
+  the keyless `ollama` provider; the user guide said Python 3.12
+  is required (it is >= 3.11) and had two sections numbered 8.
+- Added one-line docstrings to the main public API
+  (`Case`/`CaseResult`/`RunReport`, run/recording I/O, reports,
+  Promptfoo import, scorer dispatch, CLI entry points, judge).
+
 ## [0.2.0] — 2026-10-29
 
 ### Added

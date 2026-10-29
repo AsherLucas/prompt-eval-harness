@@ -11,8 +11,9 @@
 
 ## 1. Installing from a clean virtual environment
 
-You need Python 3.12 (see the CI example in the README) and no API
-key for the offline path. From the repository root:
+You need Python 3.11 or later (CI runs 3.11 and 3.12; see the CI
+example in the README) and no API key for the offline path. From
+the repository root:
 
 ```bash
 python3 -m venv .venv
@@ -84,6 +85,11 @@ Ready-made examples live in `examples/`:
   `format`, `length`, and `contains_all`.
 - `examples/codegen.yaml` — code/structured-output cases built
   around `json_schema`, `regex`, and `exact`.
+- `examples/prompt-regression/` — a worked 6-case help-desk
+  regression: baseline cases, a checked-in `baseline.json`, one
+  simulated regression, and a `diff` walkthrough with verified
+  output (see its README). Start here if you want to see the
+  regression workflow end to end before writing your own cases.
 
 ## 3. Running offline with the stub provider
 
@@ -240,7 +246,7 @@ Tips for CI use:
   skipped run — treat it as a broken run to investigate, not as a
   pass.
 
-## 8. v0.2.0 workflows: diff, record/replay, Promptfoo import, advisory judge
+## 9. v0.2.0 workflows: diff, record/replay, Promptfoo import, advisory judge
 
 ```bash
 # Save a machine-readable run, then compare a later run against it.

@@ -1,0 +1,123 @@
+{
+  "version": 1,
+  "model": "stub",
+  "prompt_version": "v1",
+  "harness_version": "0.2.0",
+  "threshold": 1.0,
+  "total": 6,
+  "passed_count": 6,
+  "pass_rate": 1.0,
+  "gate_passed": true,
+  "results": [
+    {
+      "case_id": "refund-window",
+      "prompt": "How long do I have to request a refund?",
+      "output": "You can request a refund within 30 days of purchase [source: refund-policy].",
+      "passed": true,
+      "expectations": [
+        {
+          "type": "contains_all",
+          "passed": true,
+          "detail": "contains all 1 strings"
+        },
+        {
+          "type": "citation",
+          "passed": true,
+          "detail": "found 1 citation(s)"
+        }
+      ],
+      "advisory": [],
+      "usage": {}
+    },
+    {
+      "case_id": "password-reset",
+      "prompt": "I forgot my password. How do I reset it?",
+      "output": "Use the reset link on the sign-in page. The link expires in 24 hours, so use it promptly.",
+      "passed": true,
+      "expectations": [
+        {
+          "type": "contains_all",
+          "passed": true,
+          "detail": "contains all 2 strings"
+        },
+        {
+          "type": "length",
+          "passed": true,
+          "detail": "89 chars, 18 words"
+        }
+      ],
+      "advisory": [],
+      "usage": {}
+    },
+    {
+      "case_id": "outage-status",
+      "prompt": "Is there an outage right now?",
+      "output": "We are investigating reports of slow logins. Check status.northwind.example for live updates.",
+      "passed": true,
+      "expectations": [
+        {
+          "type": "contains_all",
+          "passed": true,
+          "detail": "contains all 2 strings"
+        }
+      ],
+      "advisory": [],
+      "usage": {}
+    },
+    {
+      "case_id": "export-data",
+      "prompt": "Export my account data as a structured summary.",
+      "output": "{\"format\": \"csv\", \"ready_in_days\": 3}",
+      "passed": true,
+      "expectations": [
+        {
+          "type": "json_schema",
+          "passed": true,
+          "detail": "JSON matches schema"
+        }
+      ],
+      "advisory": [],
+      "usage": {}
+    },
+    {
+      "case_id": "api-rate-limit",
+      "prompt": "What happens when I exceed the API rate limit?",
+      "output": "You get a 429 response. The limit is 600 requests per minute per API key.",
+      "passed": true,
+      "expectations": [
+        {
+          "type": "contains_all",
+          "passed": true,
+          "detail": "contains all 1 strings"
+        },
+        {
+          "type": "regex",
+          "passed": true,
+          "detail": "matched '\\\\d+ requests per minute'"
+        }
+      ],
+      "advisory": [],
+      "usage": {}
+    },
+    {
+      "case_id": "billing-cycle",
+      "prompt": "When is my next billing date?",
+      "output": "Your next billing date is 2026-11-15.",
+      "passed": true,
+      "expectations": [
+        {
+          "type": "contains_all",
+          "passed": true,
+          "detail": "contains all 1 strings"
+        },
+        {
+          "type": "regex",
+          "passed": true,
+          "detail": "matched '\\\\d{4}-\\\\d{2}-\\\\d{2}'"
+        }
+      ],
+      "advisory": [],
+      "usage": {}
+    }
+  ]
+}

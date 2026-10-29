@@ -27,6 +27,8 @@ class Expectation:
 
 @dataclass
 class Case:
+    """One evaluation case: a prompt, optional inputs, and its checks."""
+
     id: str
     prompt: str
     inputs: dict[str, Any] = field(default_factory=dict)
@@ -36,6 +38,7 @@ class Case:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Case":
+        """Build a Case from a case-file mapping."""
         return cls(
             id=str(data["id"]),
             prompt=str(data.get("prompt", "")),
@@ -60,6 +63,8 @@ class Case:
 
 @dataclass
 class ExpectationResult:
+    """The outcome of one scorer check on one output."""
+
     type: str
     passed: bool
     detail: str
@@ -67,6 +72,8 @@ class ExpectationResult:
 
 @dataclass
 class CaseResult:
+    """The scored outcome of one case (advisory results excluded from pass)."""
+
     case_id: str
     prompt: str
     output: str
@@ -80,6 +87,7 @@ class CaseResult:
 
     @property
     def passed(self) -> bool:
+        """True only if every (non-advisory) expectation passed."""
         return all(e.passed for e in self.expectations)
 
     def to_dict(self) -> dict[str, Any]:
@@ -119,6 +127,8 @@ class CaseResult:
 
 @dataclass
 class RunReport:
+    """A whole run: every case result, plus gate and pass-rate views."""
+
     results: list[CaseResult] = field(default_factory=list)
     model: str = ""
     prompt_version: str = ""

@@ -67,25 +67,20 @@ Example:
 An invalid pattern fails the expectation with an `invalid regex`
 detail instead of crashing the run.
 
-## `json_schema` — output parses as JSON and matches a schema subset
+## `json_schema` — output parses as JSON and matches a full schema
 
 | Parameter | Type | Default | Meaning |
 | --------- | ---- | ------- | ------- |
-| `schema` | mapping | `{}` | Schema to check, using the subset below. |
+| `schema` | mapping | `{}` | Schema to check, validated in full. |
 
-This is a **subset** of JSON Schema, not a full validator. Only
-these keywords are checked; anything else in a schema is silently
-ignored:
-
-`type`, `enum`, `required`, `properties`,
-`additionalProperties` (`false` only), `items`, `minItems`,
-`maxItems`, `minimum`, `maximum`, `minLength`, `maxLength`,
-`pattern`.
-
-`type` values: `object`, `array`, `string`, `integer`, `number`,
-`boolean`, `null`. Note that booleans are kept distinct from
-integers and numbers: `true` does **not** count as an integer or a
-number.
+This is **full JSON Schema validation** via the `jsonschema`
+package (Draft 2020-12), not the v0.1.0 subset — the subset
+description in older versions of this catalogue was outdated and
+has been corrected. Keywords such as `allOf`/`anyOf`/`oneOf`/
+`not`, nested schemas, and format-independent keywords are all
+checked. An invalid schema fails the expectation with an
+`invalid schema: ...` detail instead of passing, and a non-JSON
+output fails with `output is not valid JSON: ...`.
 
 Example:
 
@@ -100,9 +95,9 @@ Example:
 ```
 
 - Pass: output `{"name": "Ada", "age": 36}`.
-- Fail: output `{"name": "Ada"}` — detail: `$: missing required
-  property 'age'`. A non-JSON output fails with `output is not
-  valid JSON: ...`.
+- Fail: output `{"name": "Ada"}` — detail: `$: 'age' is a
+  required property`. A non-JSON output fails with `output is
+  not valid JSON: ...`.
 
 Other subset examples: `{"status": "done"}` against an `enum:
 [pending, done, failed]` property passes, while `"other"` fails

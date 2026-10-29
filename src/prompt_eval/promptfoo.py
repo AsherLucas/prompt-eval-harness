@@ -46,6 +46,7 @@ def _render_prompt(prompt: str, vars_: dict) -> str:
 
 
 def import_promptfoo(path: Path) -> list[Case]:
+    """Import a basic Promptfoo YAML file (deterministic assertions only)."""
     try:
         data = yaml.safe_load(path.read_text(encoding="utf-8"))
     except yaml.YAMLError as exc:
@@ -89,6 +90,7 @@ def import_promptfoo(path: Path) -> list[Case]:
 
 
 def cases_to_yaml(cases: list[Case]) -> str:
+    """Serialise cases back to prompt-eval YAML format."""
     out = {"version": 1, "cases": []}
     for c in cases:
         out["cases"].append({

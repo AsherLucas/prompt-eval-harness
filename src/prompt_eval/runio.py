@@ -16,14 +16,17 @@ from .models import RunReport
 
 
 def save_run(report: RunReport, path: Path) -> None:
+    """Write a machine-readable run JSON (for `prompt-eval diff`)."""
     path.write_text(json.dumps(report.to_dict(), indent=2), encoding="utf-8")
 
 
 def load_run(path: Path) -> RunReport:
+    """Read a run JSON written by save_run / `--json`."""
     return RunReport.from_dict(json.loads(path.read_text(encoding="utf-8")))
 
 
 def save_recording(report: RunReport, path: Path) -> None:
+    """Write a recording: just case id -> output, for replay."""
     data = {
         "version": 1,
         "model": report.model,
@@ -34,6 +37,7 @@ def save_recording(report: RunReport, path: Path) -> None:
 
 
 def load_recording(path: Path) -> dict[str, str]:
+    """Read a recording written by save_recording / `record`."""
     data = json.loads(path.read_text(encoding="utf-8"))
     outputs = data.get("outputs")
     if not isinstance(outputs, dict):

@@ -21,6 +21,7 @@ from .scorers import load_plugin_scorers
 
 
 def load_cases(path: Path) -> list[Case]:
+    """Load and validate a case file (unique ids, id + prompt required)."""
     try:
         data = yaml.safe_load(path.read_text(encoding="utf-8"))
     except yaml.YAMLError as exc:
@@ -118,6 +119,7 @@ def _print_summary(args, report) -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
+    """Build the prompt-eval CLI parser (run/record/replay/diff/import)."""
     p = argparse.ArgumentParser(prog="prompt-eval", description="Prompt & agent evaluation regression harness")
     p.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     sub = p.add_subparsers(dest="command", required=True)
@@ -152,6 +154,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """CLI entry point; returns 0 (gate pass), 1 (gate fail), or 2 (usage error)."""
     args = build_parser().parse_args(argv)
     try:
         if args.command == "diff":

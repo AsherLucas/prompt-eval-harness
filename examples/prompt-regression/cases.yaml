@@ -1,0 +1,64 @@
+# Worked example: prompt regression for a help-desk assistant.
+#
+# Scenario: a small support assistant for a fictional product,
+# "Northwind Cloud". Each case is a customer question; the stub
+# outputs below stand in for what a model version returned. In real
+# use, remove stub_output and run with --provider openai or ollama,
+# then save the real run with --json and diff it against baseline.json.
+#
+# The point of this example is the workflow, not the stub outputs:
+# a prompt or model change that silently drops a refund window or a
+# citation should fail the gate, and `prompt-eval diff` should name
+# exactly which case flipped.
+version: 1
+cases:
+  - id: refund-window
+    prompt: "How long do I have to request a refund?"
+    stub_output: "You can request a refund within 30 days of purchase [source: refund-policy]."
+    expected:
+      - type: contains_all
+        strings: ["30 days"]
+      - type: citation
+        min_citations: 1
+        required_sources: [refund-policy]
+  - id: password-reset
+    prompt: "I forgot my password. How do I reset it?"
+    stub_output: "Use the reset link on the sign-in page. The link expires in 24 hours, so use it promptly."
+    expected:
+      - type: contains_all
+        strings: ["reset link", "24 hours"]
+      - type: length
+        max_words: 80
+  - id: outage-status
+    prompt: "Is there an outage right now?"
+    stub_output: "We are investigating reports of slow logins. Check status.northwind.example for live updates."
+    expected:
+      - type: contains_all
+        strings: ["status.northwind.example", "investigating"]
+  - id: export-data
+    prompt: "Export my account data as a structured summary."
+    stub_output: '{"format": "csv", "ready_in_days": 3}'
+    expected:
+      - type: json_schema
+        schema:
+          type: object
+          required: [format, ready_in_days]
+          properties:
+            format: {type: string, enum: [csv, json]}
+            ready_in_days: {type: integer, minimum: 0, maximum: 7}
+  - id: api-rate-limit
+    prompt: "What happens when I exceed the API rate limit?"
+    stub_output: "You get a 429 response. The limit is 600 requests per minute per API key."
+    expected:
+      - type: contains_all
+        strings: ["429"]
+      - type: regex
+        pattern: "\\d+ requests per minute"
+  - id: billing-cycle
+    prompt: "When is my next billing date?"
+    stub_output: "Your next billing date is 2026-11-15."
+    expected:
+      - type: contains_all
+        strings: ["next billing date"]
+      - type: regex
+        pattern: "\\d{4}-\\d{2}-\\d{2}"

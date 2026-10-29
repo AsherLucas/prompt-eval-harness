@@ -189,6 +189,7 @@ def load_plugin_scorers(group: str = "prompt_eval.scorers") -> list[str]:
 
 
 def score_expectation(output: str, expectation: Expectation) -> ExpectationResult:
+    """Score one expectation; unknown types fail, never crash."""
     fn = _SCORERS.get(expectation.type)
     if fn is None:
         return _fail(expectation.type, f"unknown scorer type {expectation.type!r}")

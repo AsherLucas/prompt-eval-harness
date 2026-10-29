@@ -15,6 +15,7 @@ def _snippet(text: str, limit: int = 300) -> str:
 
 
 def render_markdown(report: RunReport) -> str:
+    """Render a run as a Markdown report (summary + failed cases)."""
     lines = [
         "# Prompt evaluation report",
         "",
@@ -65,6 +66,7 @@ def render_markdown(report: RunReport) -> str:
 
 
 def render_junit(report: RunReport) -> str:
+    """Render a run as JUnit XML, one testcase per case."""
     suites = ET.Element("testsuites")
     suite = ET.SubElement(suites, "testsuite", {
         "name": "prompt-eval",

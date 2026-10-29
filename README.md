@@ -1,5 +1,9 @@
 # prompt-eval-harness
 
+[![CI](https://github.com/AsherLucas/prompt-eval-harness/actions/workflows/ci.yml/badge.svg)](https://github.com/AsherLucas/prompt-eval-harness/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Python >= 3.11](https://img.shields.io/badge/python-%3E%3D3.11-blue.svg)](pyproject.toml)
+
 A deterministic, offline-first prompt and agent evaluation regression
 harness: a Python library, a CLI, and a GitHub Action that fail CI the
 way a broken unit test does when a prompt, model, or retrieval change
@@ -21,18 +25,35 @@ silently degrades output.
 # such as Debian/Ubuntu, where system pip refuses package installs):
 python3 -m venv .venv
 .venv/bin/pip install -e ".[dev]"
-# then use .venv/bin/python -m prompt_eval ... (or activate the venv)
-```
+# Commands below use .venv/bin/python so they work without activating
+# the venv; after `source .venv/bin/activate`, plain `python` works too.
+
 # Offline demo — no API key, no network, all 30 golden cases pass:
-python -m prompt_eval run --cases examples/cases.yaml --provider stub
+.venv/bin/python -m prompt_eval run --cases examples/cases.yaml --provider stub
 
 # The same run, with reports:
-python -m prompt_eval run --cases examples/cases.yaml --provider stub \
+.venv/bin/python -m prompt_eval run --cases examples/cases.yaml --provider stub \
   --markdown report.md --junit report.xml
 
 # Watch the CI gate fail on purpose (1/3 passed, exit code 1):
-python -m prompt_eval run --cases examples/failing.yaml --provider stub; echo "exit=$?"
+.venv/bin/python -m prompt_eval run --cases examples/failing.yaml --provider stub; echo "exit=$?"
+
+# Catch a prompt regression with run-diff (see
+# examples/prompt-regression/README.md for the verified output):
+.venv/bin/python -m prompt_eval run --cases examples/prompt-regression/cases.yaml \
+  --provider stub --prompt-version v1 --json /tmp/baseline.json
+.venv/bin/python -m prompt_eval run --cases examples/prompt-regression/regressed.yaml \
+  --provider stub --prompt-version v2 --json /tmp/new.json
+.venv/bin/python -m prompt_eval diff --baseline /tmp/baseline.json \
+  --new /tmp/new.json; echo "diff exit=$?"
+# (The same baseline is also checked in as
+# examples/prompt-regression/baseline.json.)
 ```
+
+Verified in a clean venv against this checkout: golden cases
+`30/30 passed`, failing example `1/3 passed` with exit code 1,
+prompt-regression example `6/6` baseline vs `5/6` regressed with
+exactly one `Pass -> Fail` case (`refund-window`), diff exit 1.
 
 Use it as a library, too:
 
@@ -151,6 +172,11 @@ python -m prompt_eval import-promptfoo --input promptfoo.yaml --output cases.yam
 Token usage reported by the provider (prompt/completion/total
 tokens) is shown in the Markdown report; cost is never estimated
 from invented prices.
+
+Worked example: `examples/prompt-regression/` is a realistic
+6-case help-desk regression (baseline 6/6, one simulated
+regression, diff names exactly that case) with its verified
+output documented in its README.
 
 ## Reports and the CI gate
 
